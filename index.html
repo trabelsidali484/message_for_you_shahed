@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A note for Shahd</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Pacifico&display=swap">
+<style>
+  /* Layout: شاشة ستوري عمودية، أشرطة تقدم في الأعلى، نص يظهر سطرا سطرا، وقلوب تطفو خلف كل شيء. */
+  :root {
+    --bg: #2a1236;
+    --bg-2: #5a2150;
+    --bg-3: #8c3a5e;
+    --fg: #fff1f6;
+    --muted: #e9c3d6;
+    --accent: #ff7aa8;
+    --accent-ink: #3a0f26;
+    --soft: rgba(255, 255, 255, 0.12);
+    --line: rgba(255, 255, 255, 0.28);
+    --font-body: "Quicksand", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-display: "Pacifico", "Brush Script MT", cursive;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image: linear-gradient(165deg, var(--bg) 0%, var(--bg-2) 55%, var(--bg-3) 100%);
+    background-attachment: fixed;
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.6;
+    overflow: hidden;
+  }
+
+  #floaters { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .floater { position: absolute; bottom: -60px; opacity: 0; animation: rise linear infinite; }
+  .floater svg { display: block; width: 100%; height: 100%; }
+  @keyframes rise {
+    0% { transform: translateY(0) rotate(-8deg); opacity: 0; }
+    12% { opacity: 0.5; }
+    88% { opacity: 0.3; }
+    100% { transform: translateY(-115vh) rotate(10deg); opacity: 0; }
+  }
+
+  .stage {
+    position: relative; z-index: 1;
+    height: 100%;
+    max-width: 520px;
+    margin-inline: auto;
+    display: flex; flex-direction: column;
+    padding-left: max(18px, env(safe-area-inset-left, 0px));
+    padding-right: max(18px, env(safe-area-inset-right, 0px));
+    padding-block: 14px 22px;
+  }
+
+  .bars { display: flex; gap: 6px; padding-top: 4px; }
+  .bar { flex: 1; height: 4px; border-radius: 4px; background: var(--soft); overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--fg); border-radius: 4px; }
+  .bar.done > i { width: 100%; }
+  .bar.now > i { animation: fill var(--dur, 7s) linear forwards; }
+  .paused .bar.now > i { animation-play-state: paused; }
+  @keyframes fill { to { width: 100%; } }
+
+  .top { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; min-height: 40px; }
+  .who { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .dot { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); }
+  .dot svg { width: 18px; height: 18px; }
+  .back {
+    background: var(--soft); border: 1px solid var(--line); color: var(--fg);
+    border-radius: 999px; padding: 4px 14px; font: inherit; font-size: 0.85rem; cursor: pointer;
+  }
+  .back:focus-visible, .btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+  .slide {
+    flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+    padding: 12px 6px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .slide.final { cursor: default; }
+
+  .line { margin: 0; opacity: 0; transform: translateY(14px); animation: up 0.8s ease forwards; text-wrap: balance; }
+  @keyframes up { to { opacity: 1; transform: none; } }
+
+  .big { font-family: var(--font-display); font-size: clamp(1.9rem, 8.4vw, 2.7rem); line-height: 1.4; font-weight: 400; }
+  .big .nm { color: var(--accent); }
+  .mid { font-size: clamp(1.15rem, 4.6vw, 1.4rem); }
+  .soft { color: var(--muted); font-size: 1rem; }
+
+  .tap { margin: 0; text-align: center; color: var(--muted); font-size: 0.85rem; letter-spacing: 0.04em; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+
+  .choices { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+  .btn {
+    font: inherit; font-weight: 700; cursor: pointer; text-align: center;
+    border-radius: 999px; padding: 0.75em 1.4em; border: 2px solid var(--accent);
+    background: transparent; color: var(--fg); text-decoration: none; display: block; line-height: 1.4;
+  }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn:hover { filter: brightness(1.1); }
+
+  .reply { display: flex; flex-direction: column; gap: 12px; }
+  .reply .note { margin: 0; font-size: 0.9rem; color: var(--muted); }
+
+  .wait { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px; }
+  .beat { width: 72px; height: 72px; color: var(--accent); display: block; animation: beat 1.4s ease-in-out infinite; filter: drop-shadow(0 6px 18px rgba(255, 122, 168, 0.55)); }
+  .beat svg { display: block; width: 100%; height: 100%; }
+  @keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.12); } }
+  .typing { display: inline-flex; gap: 7px; background: var(--soft); border: 1px solid var(--line); border-radius: 999px; padding: 12px 18px; }
+  .typing i { width: 9px; height: 9px; border-radius: 50%; background: var(--fg); display: block; animation: dot 1.2s ease-in-out infinite; }
+  .typing i:nth-child(2) { animation-delay: 0.2s; }
+  .typing i:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-7px); opacity: 1; } }
+
+  #burst { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .floater { animation: none; opacity: 0.25; bottom: auto; }
+    .line { animation-duration: 0.01s; }
+    .tap { animation: none; }
+    .beat, .typing i { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="floaters" aria-hidden="true"></div>
+
+<div class="stage" id="stage">
+  <div class="bars" id="bars" aria-hidden="true"></div>
+  <div class="top">
+    <div class="who">
+      <span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.1 3.5-3.2 5.6-3.2 3.6 0 5.5 3.7 4 7.2C19.5 16.4 12 21 12 21z"/></svg></span>
+      <span id="author"></span>
+    </div>
+    <button class="back" id="back" type="button" hidden>Back</button>
+  </div>
+
+  <section class="slide" id="slide" aria-live="polite"></section>
+  <p class="tap" id="tap">Tap to continue</p>
+</div>
+
+<canvas id="burst" aria-hidden="true"></canvas>
+
+<script>
+  // Edit everything from here.
+  var CONFIG = {
+    herName: "شهد",
+    from: "",           // your name (optional), shown at the top
+    slides: [
+      { lines: [
+        { cls: "big", text: "{name}," },
+        { cls: "mid", text: "I want to tell you a few words from my heart." }
+      ]},
+      { lines: [
+        { cls: "mid", text: "I searched for you for so long, and every day I hoped I would find you." },
+        { cls: "soft", text: "And when I did, I felt something I can't quite explain." }
+      ]},
+      { lines: [
+        { cls: "big", text: "Your eyes enchanted me." },
+        { cls: "mid", text: "From the very first time, I've wanted to see them again." }
+      ]},
+      { lines: [
+        { cls: "mid", text: "I don't want to let go of you." },
+        { cls: "soft", text: "Our talks, the reels, the laughter, all the little things that make me happy." }
+      ]},
+      { lines: [
+        { cls: "mid", text: "When we stopped talking, I missed our conversations so much." },
+        { cls: "soft", text: "I don't want to pressure you. Take all the time you need." }
+      ]},
+      { final: true, lines: [
+        { cls: "big", text: "I'm waiting for a message from you" },
+        { cls: "soft", text: "Whenever you want, however you want." }
+      ]}
+    ]
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var DURATION = 6;
+  var HEART = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.1 3.5-3.2 5.6-3.2 3.6 0 5.5 3.7 4 7.2C19.5 16.4 12 21 12 21z"/></svg>';
+
+  document.title = "A note for " + CONFIG.herName;
+  $("author").textContent = CONFIG.from || "A little note";
+
+  // قلوب تطفو في الخلفية
+  (function () {
+    var box = $("floaters"), colors = ["#ff7aa8", "#ffb3cf", "#c9a8ff", "#ff9cc2", "#e6d3ff"];
+    for (var i = 0; i < 18; i++) {
+      var d = document.createElement("div");
+      var s = 16 + Math.random() * 34;
+      d.className = "floater";
+      d.style.left = (Math.random() * 96).toFixed(1) + "%";
+      d.style.width = d.style.height = s.toFixed(0) + "px";
+      d.style.color = colors[i % colors.length];
+      if (reduce) { d.style.top = (Math.random() * 90).toFixed(0) + "%"; }
+      else {
+        d.style.animationDuration = (14 + Math.random() * 14).toFixed(1) + "s";
+        d.style.animationDelay = (-Math.random() * 24).toFixed(1) + "s";
+      }
+      d.innerHTML = HEART;
+      box.appendChild(d);
+    }
+  })();
+
+  // أشرطة التقدم
+  var bars = [];
+  CONFIG.slides.forEach(function () {
+    var b = document.createElement("div"); b.className = "bar";
+    b.appendChild(document.createElement("i"));
+    $("bars").appendChild(b); bars.push(b);
+  });
+
+  var idx = 0, timer = null;
+
+  function render() {
+    var data = CONFIG.slides[idx], el = $("slide");
+    el.innerHTML = "";
+    el.className = "slide" + (data.final ? " final" : "");
+    data.lines.forEach(function (l, i) {
+      var p = document.createElement("p");
+      p.className = "line " + l.cls;
+      p.style.animationDelay = (0.2 + i * 0.9) + "s";
+      var parts = l.text.split("{name}");
+      p.appendChild(document.createTextNode(parts[0]));
+      for (var k = 1; k < parts.length; k++) {
+        var s = document.createElement("span"); s.className = "nm"; s.textContent = CONFIG.herName;
+        p.appendChild(s); p.appendChild(document.createTextNode(parts[k]));
+      }
+      el.appendChild(p);
+    });
+    if (data.final) buildFinal(el);
+
+    bars.forEach(function (b, i) {
+      b.className = "bar" + (i < idx ? " done" : "");
+      b.firstChild.style.animation = "none";
+    });
+    // إعادة تشغيل شريط الشريحة الحالية
+    void $("bars").offsetWidth;
+    if (!data.final) {
+      bars[idx].className = "bar now";
+      bars[idx].style.setProperty("--dur", DURATION + "s");
+      bars[idx].firstChild.style.animation = "";
+    } else {
+      bars[idx].className = "bar done";
+    }
+
+    $("back").hidden = idx === 0;
+    $("tap").hidden = !!data.final;
+    clearTimeout(timer);
+    if (!data.final && !reduce) timer = setTimeout(next, DURATION * 1000);
+  }
+
+  function next() { if (idx < CONFIG.slides.length - 1) { idx++; render(); } }
+  function prev() { if (idx > 0) { idx--; render(); } }
+
+  $("slide").addEventListener("click", function () { if (!CONFIG.slides[idx].final) next(); });
+  $("back").addEventListener("click", prev);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
+  });
+
+  // الشريحة الأخيرة: قلب ينبض ونقاط كتابة
+  function buildFinal(el) {
+    var w = document.createElement("div");
+    w.className = "wait line";
+    w.style.animationDelay = "1.8s";
+    w.innerHTML = '<span class="beat">' + HEART + '</span>' +
+      '<span class="typing" aria-hidden="true"><i></i><i></i><i></i></span>';
+    el.appendChild(w);
+    setTimeout(function () { burst(50); }, 1200);
+  }
+
+  // قلوب احتفالية
+  var canvas = $("burst"), ctx = canvas.getContext("2d"), parts = [], raf = null;
+  function size() {
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function heart(x, y, s) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + s * 0.3);
+    ctx.bezierCurveTo(x, y - s * 0.3, x - s, y - s * 0.3, x - s, y + s * 0.3);
+    ctx.bezierCurveTo(x - s, y + s * 0.75, x, y + s * 1.0, x, y + s * 1.25);
+    ctx.bezierCurveTo(x, y + s * 1.0, x + s, y + s * 0.75, x + s, y + s * 0.3);
+    ctx.bezierCurveTo(x + s, y - s * 0.3, x, y - s * 0.3, x, y + s * 0.3);
+    ctx.closePath(); ctx.fill();
+  }
+  function burst(count) {
+    size();
+    var colors = ["#ff7aa8", "#ffb3cf", "#c9a8ff", "#ffffff", "#ffd36e"];
+    var n = reduce ? Math.min(count, 18) : count;
+    for (var i = 0; i < n; i++) {
+      parts.push({ x: window.innerWidth / 2 + (Math.random() - 0.5) * 120, y: window.innerHeight * 0.6,
+        vx: (Math.random() - 0.5) * 11, vy: -(5 + Math.random() * 10), s: 6 + Math.random() * 10,
+        c: colors[(Math.random() * colors.length) | 0], life: 1 });
+    }
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  function tick() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    parts = parts.filter(function (p) { return p.life > 0 && p.y < window.innerHeight + 40; });
+    parts.forEach(function (p) {
+      p.vy += 0.24; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.life -= 0.006;
+      ctx.globalAlpha = Math.max(p.life, 0); ctx.fillStyle = p.c; heart(p.x, p.y, p.s);
+    });
+    ctx.globalAlpha = 1;
+    if (parts.length) { raf = requestAnimationFrame(tick); }
+    else { raf = null; ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); }
+  }
+
+  render();
+</script>
+</body>
+</html>
